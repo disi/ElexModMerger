@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace ElexModMerger
 {
@@ -9,6 +12,37 @@ namespace ElexModMerger
     {
         static void Main(string[] args)
         {
+            // extract all them mod files
+            if (File.Exists("m_9_MergeMod.pak"))
+            {
+                Process.Start("CMD.exe", "/C echo \"*\" | elexresman.exe " + "m_9_MergeMod.pak");
+            }
+            var mods = Directory.GetFiles(".", "m_?_*.pak");
+            foreach (string file in mods)
+            {
+                Process.Start("CMD.exe", "/C echo \"*\" | elexresman.exe " + file);
+            }
+            // here needs to be an input to wait for the files to write to disk
+            Console.WriteLine("Extracted all mods!");
+            Console.ReadKey();
+
+            // find all them w_info.hdr and convert those, then add to winforesult
+            string path = @System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+            var wInfofiles = Directory.GetFiles(path, "w_info.hdr", SearchOption.AllDirectories);
+            Console.WriteLine("Found the w_info.hdr files in " + path + " \nNumber of files: " + wInfofiles.Length);
+            Console.ReadKey();
+            Dictionary<string, List<string>> wInfoResult = new Dictionary<string, List<string>>();
+            foreach (string winfofile in wInfofiles)
+            {
+                Console.WriteLine("File : " + winfofile);
+                Console.ReadKey();
+                Process.Start("CMD.exe", "/C elexresman.exe " + winfofile);
+                // here needs to be an input to wait for the file to write to disk or maybe some flush-command?
+                var wInfo = readInfos(infofile: winfofile + "doc");
+                wInfoResult.Concat(wInfo.Where(x => !wInfoResult.Keys.Contains(x.Key)));
+            }
+
+            /*
             Dictionary<string, List<string>> wInfo1 = readInfos(infofile: "w_info.hdrdoc");
             Dictionary<string, List<string>> wInfo2 = readInfos(infofile: "w_info1.hdrdoc");
             Console.WriteLine("Read files!");
@@ -31,6 +65,7 @@ namespace ElexModMerger
             tw.Close();
             Console.WriteLine("Done!");
             Console.ReadKey();
+            */
         }
 
         private static Dictionary<string, List<string>> readInfos(string infofile)
