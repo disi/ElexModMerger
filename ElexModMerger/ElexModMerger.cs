@@ -16,9 +16,10 @@ namespace ElexModMerger
             string workingDir = @System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
 
             // extract all them mod files
-            if (File.Exists("m_9_MergeMod.pak"))
+            if (File.Exists(workingDir + "\\m_9_MergeMod.pak"))
             {
-                Process.Start("CMD.exe", "/C echo \"*\" | elexresman.exe " + "m_9_MergeMod.pak").WaitForExit();
+                Process.Start("CMD.exe", "/C echo \"*\" | elexresman.exe " + workingDir + "\\m_9_MergeMod.pak").WaitForExit();
+                File.Delete(workingDir + "\\m_9_MergeMod.pak");
             }
             var mods = Directory.GetFiles(".", "m_?_*.pak");
             foreach (string file in mods)
