@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace ElexModMerger
 {
@@ -14,6 +12,22 @@ namespace ElexModMerger
         {
             // get the current directory
             string workingDir = @System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+
+            // check environment
+            if (!File.Exists(workingDir + "\\elexresman.exe"))
+            {
+                Console.WriteLine("No elexresman.exe found!");
+                Console.WriteLine("Press any key to exit!");
+                Console.ReadKey();
+                Environment.Exit(0);
+            }
+            if (!File.Exists(workingDir + "\\m_?_*.pak"))
+            {
+                Console.WriteLine("No mods found!");
+                Console.WriteLine("Press any key to exit!");
+                Console.ReadKey();
+                Environment.Exit(0);
+            }
 
             // extract all them mod files
             if (File.Exists(workingDir + "\\m_9_MergeMod.pak"))
@@ -65,6 +79,10 @@ namespace ElexModMerger
                 }
                 Process.Start("CMD.exe", "/C elexresman.exe " + workingDir + "\\MergeMod\\documents\\w_info.hdrdoc").WaitForExit();
                 File.Delete(workingDir + "\\MergeMod\\documents\\w_info.hdrdoc");
+            }
+            else
+            {
+                Console.WriteLine("No w_info.hdr found!");
             }
 
             // create MergeMod
