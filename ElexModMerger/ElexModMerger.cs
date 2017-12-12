@@ -13,7 +13,6 @@ namespace ElexModMerger
         {
             // get the current directory
             string workingDir = @System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
-            StringComparison comp = StringComparison.OrdinalIgnoreCase;
             if (!workingDir.Contains("\\data\\packed"))
             {
                 Console.WriteLine("This program needs to run in elex\\data\\packed!");
@@ -46,17 +45,19 @@ namespace ElexModMerger
             Console.WriteLine("Press any key!");
             Console.ReadKey();
 
-            // find all them w_info.hdr and convert those, then add to winforesult and write new w_info.hdr
-            var wInfofiles = Directory.GetFiles(".", "w_info.hdr", SearchOption.AllDirectories);
+            // prepare directory
             Directory.CreateDirectory("MergeMod");
-            if (wInfofiles.Length != 0)
+
+            // find all them w_info.hdr and convert those, then add to wInfoResult and write new w_info.hdr
+            var wInfoFiles = Directory.GetFiles(".", "w_info.hdr", SearchOption.AllDirectories);
+            if (wInfoFiles.Length != 0)
             {
                 Dictionary<string, List<string>> wInfoResult = new Dictionary<string, List<string>>();
-                foreach (string winfofile in wInfofiles)
+                foreach (string wInfoFile in wInfoFiles)
                 {
-                    Process.Start("CMD.exe", "/C elexresman.exe " + winfofile).WaitForExit();
-                    Console.WriteLine("Adding current File: " + winfofile);
-                    var wInfo = ReadInfos(infofile: winfofile + "doc");
+                    Process.Start("CMD.exe", "/C elexresman.exe " + wInfoFile).WaitForExit();
+                    Console.WriteLine("Adding current File: " + wInfoFile);
+                    var wInfo = ReadInfos(infoFile: wInfoFile + "doc");
                     foreach (KeyValuePair<string, List<string>> info in wInfo)
                     {
                         if (!wInfoResult.ContainsKey(info.Key))
@@ -86,6 +87,47 @@ namespace ElexModMerger
             else
             {
                 Console.WriteLine("No w_info.hdr found!");
+            }
+
+            // find all them World.elexwrl and convert those, then add to worldResult and write new World.elexwrl
+            var worldFiles = Directory.GetFiles(".", "World.elexwrl", SearchOption.AllDirectories);
+            if (worldFiles.Length != 0)
+            {
+                HashSet<string> sectorResult = new HashSet<string>();
+                foreach (string worldFile in worldFiles)
+                {
+                    Process.Start("CMD.exe", "/C elexresman.exe " + worldFile).WaitForExit();
+                    Console.WriteLine("Adding current File: " + worldFile);
+                    sectorResult.UnionWith(ReadWorld(worldFile: worldFile + "doc"));
+                }
+                if (sectorResult != null)
+                {
+                    Directory.CreateDirectory("MergeMod\\World\\");
+                    TextWriter tw = new StreamWriter("MergeMod\\World\\World.elexwrldoc");
+                    tw.WriteLine("class gCTerrain {");
+                    tw.WriteLine("    Version = 2;");
+                    tw.WriteLine("    Properties {");
+                    tw.WriteLine("        class bCString FileName = \"#G3:/data/raw/terrain3/terrain3.trn\";");
+                    tw.WriteLine("    }");
+                    tw.WriteLine("    ClassData {");
+                    tw.WriteLine("    }");
+                    tw.WriteLine("}");
+                    tw.WriteLine("Sectors = [");
+                    foreach (string sector in sectorResult)
+                    {
+                        tw.WriteLine(sector);
+                    }
+                    // dummy sector
+                    tw.WriteLine("    \"\"");
+                    tw.WriteLine("]");
+                    tw.Close();
+                    Process.Start("CMD.exe", "/C elexresman.exe " + "MergeMod\\World\\World.elexwrldoc").WaitForExit();
+                    File.Delete("MergeMod\\World\\World.elexwrldoc");
+                }
+            }
+            else
+            {
+                Console.WriteLine("No World.elexwrl found!");
             }
 
             // create MergeMod
@@ -118,10 +160,10 @@ namespace ElexModMerger
             Console.ReadKey();
         }
 
-        private static Dictionary<string, List<string>> ReadInfos(string infofile)
+        private static Dictionary<string, List<string>> ReadInfos(string infoFile)
         {
             Dictionary<string, List<string>> newDict = new Dictionary<string, List<string>>();
-            string[] lines = File.ReadAllLines(infofile);
+            string[] lines = File.ReadAllLines(infoFile);
             for (int i = 0; i < lines.Length - 1; i++)
             {
                 if (!String.IsNullOrWhiteSpace(lines[i]) && !lines[i].StartsWith("}"))
@@ -143,13 +185,34 @@ namespace ElexModMerger
             return newDict;
         }
 
-        private static void CleanDirs(string moddir)
+        private static HashSet<string> ReadWorld(string worldFile)
+        {
+            string[] lines = File.ReadAllLines(worldFile);
+            HashSet<string> sectors = new HashSet<string>();
+            for (int i = 0; i < lines.Length - 1; i++)
+            {
+                if (lines[i].StartsWith("    \"") && !lines[i].Contains("]"))
+                {
+                    if (lines[i].Last<char>() == ',')
+                    {
+                        sectors.Add(lines[i]);
+                    }
+                    else
+                    {
+                        sectors.Add(lines[i] + ",");
+                    }
+                }
+            }
+            return sectors;
+        }
+
+        private static void CleanDirs(string modDir)
         {
             Console.WriteLine("Press 'y' to remove all directories!");
             ConsoleKeyInfo result = Console.ReadKey();
             if (result.KeyChar == 'y' || result.KeyChar == 'Y')
             {
-                foreach (var subDir in new DirectoryInfo(@moddir).GetDirectories())
+                foreach (var subDir in new DirectoryInfo(modDir).GetDirectories())
                 {
                     subDir.Delete(true);
                 }
