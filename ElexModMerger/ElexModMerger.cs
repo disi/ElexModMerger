@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 
 namespace ElexModMerger
@@ -12,41 +13,43 @@ namespace ElexModMerger
         {
             // get the current directory
             string workingDir = @System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+            StringComparison comp = StringComparison.OrdinalIgnoreCase;
+            if (!workingDir.Contains("\\data\\packed"))
+            {
+                Console.WriteLine("This program needs to run in elex\\data\\packed!");
+                Console.WriteLine("Press any key to exit!");
+                Console.ReadKey();
+                Environment.Exit(0);
+            }
 
             // check environment
-            if (!File.Exists(workingDir + "\\elexresman.exe"))
+            if (!File.Exists("elexresman.exe"))
             {
                 Console.WriteLine("No elexresman.exe found!");
                 Console.WriteLine("Press any key to exit!");
                 Console.ReadKey();
                 Environment.Exit(0);
             }
-            if (!File.Exists(workingDir + "\\m_?_*.pak"))
-            {
-                Console.WriteLine("No mods found!");
-                Console.WriteLine("Press any key to exit!");
-                Console.ReadKey();
-                Environment.Exit(0);
-            }
 
             // extract all them mod files
-            if (File.Exists(workingDir + "\\m_9_MergeMod.pak"))
+            if (File.Exists("m_9_MergeMod.pak"))
             {
-                Process.Start("CMD.exe", "/C echo \"*\" | elexresman.exe " + workingDir + "\\m_9_MergeMod.pak").WaitForExit();
-                File.Delete(workingDir + "\\m_9_MergeMod.pak");
+                Process.Start("CMD.exe", "/C echo \"*\" | elexresman.exe " + "m_9_MergeMod.pak").WaitForExit();
+                File.Delete("m_9_MergeMod.pak");
             }
             var mods = Directory.GetFiles(".", "m_?_*.pak");
             foreach (string file in mods)
             {
-                Process.Start("CMD.exe", "/C echo \"*\" | elexresman.exe " + file).WaitForExit();
+                Process.Start("CMD.exe", "/C echo \"*\" | elexresman.exe " + @file).WaitForExit();
             }
             Console.WriteLine("Extracted all mods");
             Console.WriteLine("Press any key!");
             Console.ReadKey();
 
             // find all them w_info.hdr and convert those, then add to winforesult and write new w_info.hdr
-            var wInfofiles = Directory.GetFiles(workingDir, "w_info.hdr", SearchOption.AllDirectories);
-            if (wInfofiles != null)
+            var wInfofiles = Directory.GetFiles(".", "w_info.hdr", SearchOption.AllDirectories);
+            Directory.CreateDirectory("MergeMod");
+            if (wInfofiles.Length != 0)
             {
                 Dictionary<string, List<string>> wInfoResult = new Dictionary<string, List<string>>();
                 foreach (string winfofile in wInfofiles)
@@ -64,8 +67,8 @@ namespace ElexModMerger
                 }
                 if (wInfoResult != null)
                 {
-                    Directory.CreateDirectory(workingDir + "\\MergeMod\\documents\\");
-                    TextWriter tw = new StreamWriter(workingDir + "\\MergeMod\\documents\\w_info.hdrdoc");
+                    Directory.CreateDirectory("MergeMod\\documents\\");
+                    TextWriter tw = new StreamWriter("MergeMod\\documents\\w_info.hdrdoc");
                     tw.WriteLine("class gCInfo {");
                     foreach (KeyValuePair<string, List<string>> info in wInfoResult)
                     {
@@ -77,8 +80,8 @@ namespace ElexModMerger
                     tw.WriteLine("}");
                     tw.Close();
                 }
-                Process.Start("CMD.exe", "/C elexresman.exe " + workingDir + "\\MergeMod\\documents\\w_info.hdrdoc").WaitForExit();
-                File.Delete(workingDir + "\\MergeMod\\documents\\w_info.hdrdoc");
+                Process.Start("CMD.exe", "/C elexresman.exe " + "MergeMod\\documents\\w_info.hdrdoc").WaitForExit();
+                File.Delete("MergeMod\\documents\\w_info.hdrdoc");
             }
             else
             {
@@ -86,22 +89,28 @@ namespace ElexModMerger
             }
 
             // create MergeMod
-            Console.WriteLine("Create m_9_MergeMod.pak");
-            Console.WriteLine("Press any key!");
-            Console.ReadKey();
-
-            System.Diagnostics.Process myProcess = new System.Diagnostics.Process();
-            myProcess.StartInfo.FileName = "elexresman.exe";
-            myProcess.StartInfo.Arguments = workingDir + "\\MergeMod";
-            myProcess.StartInfo.UseShellExecute = false;
-            myProcess.StartInfo.RedirectStandardInput = true;
-            myProcess.Start();
-            System.IO.StreamWriter myStreamWriter = myProcess.StandardInput;
-            myStreamWriter.WriteLine("9");
-            myProcess.WaitForExit();
+            if (Directory.GetFiles("MergeMod", "*", SearchOption.AllDirectories).Length != 0)
+            {
+                Console.WriteLine("Create m_9_MergeMod.pak");
+                Console.WriteLine("Press any key!");
+                Console.ReadKey();
+                Process myProcess = new System.Diagnostics.Process();
+                myProcess.StartInfo.FileName = "elexresman.exe";
+                myProcess.StartInfo.Arguments = "MergeMod";
+                myProcess.StartInfo.UseShellExecute = false;
+                myProcess.StartInfo.RedirectStandardInput = true;
+                myProcess.Start();
+                StreamWriter myStreamWriter = myProcess.StandardInput;
+                myStreamWriter.WriteLine("9");
+                myProcess.WaitForExit();
+            }
+            else
+            {
+                Console.WriteLine("No files found to create MergeMod!");
+            }
 
             // cleanup
-            CleanDirs(workingDir);
+            CleanDirs(@workingDir);
 
             // done
             Console.WriteLine("");
