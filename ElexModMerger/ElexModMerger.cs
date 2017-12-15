@@ -130,6 +130,47 @@ namespace ElexModMerger
                 Console.WriteLine("No World.elexwrl found!");
             }
 
+            // find all them w_quest.hdr and convert those, then add to wInfoResult and write new w_quest.hdr
+            var wQuestFiles = Directory.GetFiles(".", "w_quest.hdr", SearchOption.AllDirectories);
+            if (wQuestFiles.Length != 0)
+            {
+                Dictionary<string, List<string>> wQuestResult = new Dictionary<string, List<string>>();
+                foreach (string wQuestFile in wQuestFiles)
+                {
+                    Process.Start("CMD.exe", "/C elexresman.exe " + wQuestFile).WaitForExit();
+                    Console.WriteLine("Adding current File: " + wQuestFile);
+                    var wQuest = ReadQuests(questFile: wQuestFile + "doc");
+                    foreach (KeyValuePair<string, List<string>> quest in wQuest)
+                    {
+                        if (!wQuestResult.ContainsKey(quest.Key))
+                        {
+                            wQuestResult.Add(quest.Key, quest.Value);
+                        }
+                    }
+                }
+                if (wQuestResult != null)
+                {
+                    Directory.CreateDirectory("MergeMod\\documents\\");
+                    TextWriter tw = new StreamWriter("MergeMod\\documents\\w_quest.hdrdoc");
+                    tw.WriteLine("class gCQuest {");
+                    foreach (KeyValuePair<string, List<string>> quest in wQuestResult)
+                    {
+                        foreach (string item in quest.Value)
+                        {
+                            tw.WriteLine(item);
+                        }
+                    }
+                    tw.WriteLine("}");
+                    tw.Close();
+                }
+                Process.Start("CMD.exe", "/C elexresman.exe " + "MergeMod\\documents\\w_quest.hdrdoc").WaitForExit();
+                File.Delete("MergeMod\\documents\\w_quest.hdrdoc");
+            }
+            else
+            {
+                Console.WriteLine("No w_quest.hdr found!");
+            }
+
             // create MergeMod
             if (Directory.GetFiles("MergeMod", "*", SearchOption.AllDirectories).Length != 0)
             {
@@ -204,6 +245,31 @@ namespace ElexModMerger
                 }
             }
             return sectors;
+        }
+
+        private static Dictionary<string, List<string>> ReadQuests(string questFile)
+        {
+            Dictionary<string, List<string>> newDict = new Dictionary<string, List<string>>();
+            string[] lines = File.ReadAllLines(questFile);
+            for (int i = 0; i < lines.Length - 1; i++)
+            {
+                if (!String.IsNullOrWhiteSpace(lines[i]) && !lines[i].StartsWith("}"))
+                {
+                    if (lines[i].Contains("\" {"))
+                    {
+                        string key = lines[i].Split('\"')[1];
+                        List<string> values = new List<string> { lines[i] };
+                        int y;
+                        for (y = i + 1; !lines[y].Contains("\" {") && !lines[y].StartsWith("}"); y++)
+                        {
+                            values.Add(lines[y]);
+                        }
+                        newDict.Add(key, values);
+                        i = y - 1;
+                    }
+                }
+            }
+            return newDict;
         }
 
         private static void CleanDirs(string modDir)
