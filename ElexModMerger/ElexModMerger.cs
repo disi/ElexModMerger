@@ -33,13 +33,13 @@ namespace ElexModMerger
             // extract all them mod files
             if (File.Exists("m_9_MergeMod.pak"))
             {
-                runElexResMan(inputFile: "m_9_MergeMod.pak", inputArg: "*").WaitForExit();
+                RunElexResMan(inputFile: "m_9_MergeMod.pak", inputArg: "*").WaitForExit();
                 File.Delete("m_9_MergeMod.pak");
             }
             var mods = Directory.GetFiles(".", "m_?_*.pak");
             foreach (string file in mods)
             {
-                runElexResMan(inputFile: file, inputArg: "*").WaitForExit();
+                RunElexResMan(inputFile: file, inputArg: "*").WaitForExit();
             }
             Console.WriteLine("Extracted all mods");
             Console.WriteLine("Press any key!");
@@ -55,7 +55,7 @@ namespace ElexModMerger
                 Dictionary<string, List<string>> wInfoResult = new Dictionary<string, List<string>>();
                 foreach (string wInfoFile in wInfoFiles)
                 {
-                    runElexResMan(inputFile: wInfoFile, inputArg: "").WaitForExit();
+                    RunElexResMan(inputFile: wInfoFile, inputArg: "").WaitForExit();
                     Console.WriteLine("Adding current File: " + wInfoFile);
                     var wInfo = ReadInfos(infoFile: wInfoFile + "doc");
                     foreach (KeyValuePair<string, List<string>> info in wInfo)
@@ -81,7 +81,7 @@ namespace ElexModMerger
                     tw.WriteLine("}");
                     tw.Close();
                 }
-                runElexResMan(inputFile: "MergeMod\\documents\\w_info.hdrdoc", inputArg: "").WaitForExit();
+                RunElexResMan(inputFile: "MergeMod\\documents\\w_info.hdrdoc", inputArg: "").WaitForExit();
                 File.Delete("MergeMod\\documents\\w_info.hdrdoc");
             }
             else
@@ -96,7 +96,7 @@ namespace ElexModMerger
                 HashSet<string> sectorResult = new HashSet<string>();
                 foreach (string worldFile in worldFiles)
                 {
-                    runElexResMan(inputFile: worldFile, inputArg: "").WaitForExit();
+                    RunElexResMan(inputFile: worldFile, inputArg: "").WaitForExit();
                     Console.WriteLine("Adding current File: " + worldFile);
                     sectorResult.UnionWith(ReadWorld(worldFile: worldFile + "doc"));
                 }
@@ -121,7 +121,7 @@ namespace ElexModMerger
                     tw.WriteLine("    \"\"");
                     tw.WriteLine("]");
                     tw.Close();
-                    runElexResMan(inputFile: "MergeMod\\World\\World.elexwrldoc", inputArg: "").WaitForExit();
+                    RunElexResMan(inputFile: "MergeMod\\World\\World.elexwrldoc", inputArg: "").WaitForExit();
                     File.Delete("MergeMod\\World\\World.elexwrldoc");
                 }
             }
@@ -177,7 +177,7 @@ namespace ElexModMerger
                 Console.WriteLine("Create m_9_MergeMod.pak");
                 Console.WriteLine("Press any key!");
                 Console.ReadKey();
-                Process mergeProc = runElexResMan("MergeMod", "9");
+                Process mergeProc = RunElexResMan("MergeMod", "9");
                 mergeProc.WaitForExit();
             }
             else
@@ -194,7 +194,7 @@ namespace ElexModMerger
             Console.ReadKey();
         }
 
-        private static Process runElexResMan(string inputFile, string inputArg)
+        private static Process RunElexResMan(string inputFile, string inputArg)
         {
             Process myProcess = new System.Diagnostics.Process();
             myProcess.StartInfo.FileName = "elexresman.exe";
