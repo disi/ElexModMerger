@@ -15,7 +15,7 @@ namespace ElexModMerger
             string workingDir = @System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
             if (!workingDir.Contains("\\data\\packed"))
             {
-                Console.WriteLine("This program needs to run in elex\\data\\packed!");
+                Console.WriteLine("This program needs to run in elex\\data\\packed");
                 Console.WriteLine("Press any key to exit!");
                 Console.ReadKey();
                 Environment.Exit(0);
@@ -24,7 +24,7 @@ namespace ElexModMerger
             // check environment
             if (!File.Exists("elexresman.exe"))
             {
-                Console.WriteLine("No elexresman.exe found!");
+                Console.WriteLine("No elexresman.exe found");
                 Console.WriteLine("Press any key to exit!");
                 Console.ReadKey();
                 Environment.Exit(0);
@@ -33,13 +33,13 @@ namespace ElexModMerger
             // extract all them mod files
             if (File.Exists("m_9_MergeMod.pak"))
             {
-                Process.Start("CMD.exe", "/C echo \"*\" | elexresman.exe " + "m_9_MergeMod.pak").WaitForExit();
+                runElexResMan(inputFile: "m_9_MergeMod.pak", inputArg: "*").WaitForExit();
                 File.Delete("m_9_MergeMod.pak");
             }
             var mods = Directory.GetFiles(".", "m_?_*.pak");
             foreach (string file in mods)
             {
-                Process.Start("CMD.exe", "/C echo \"*\" | elexresman.exe " + @file).WaitForExit();
+                runElexResMan(inputFile: file, inputArg: "*").WaitForExit();
             }
             Console.WriteLine("Extracted all mods");
             Console.WriteLine("Press any key!");
@@ -55,7 +55,7 @@ namespace ElexModMerger
                 Dictionary<string, List<string>> wInfoResult = new Dictionary<string, List<string>>();
                 foreach (string wInfoFile in wInfoFiles)
                 {
-                    Process.Start("CMD.exe", "/C elexresman.exe " + wInfoFile).WaitForExit();
+                    runElexResMan(inputFile: wInfoFile, inputArg: "").WaitForExit();
                     Console.WriteLine("Adding current File: " + wInfoFile);
                     var wInfo = ReadInfos(infoFile: wInfoFile + "doc");
                     foreach (KeyValuePair<string, List<string>> info in wInfo)
@@ -81,7 +81,7 @@ namespace ElexModMerger
                     tw.WriteLine("}");
                     tw.Close();
                 }
-                Process.Start("CMD.exe", "/C elexresman.exe " + "MergeMod\\documents\\w_info.hdrdoc").WaitForExit();
+                runElexResMan(inputFile: "MergeMod\\documents\\w_info.hdrdoc", inputArg: "").WaitForExit();
                 File.Delete("MergeMod\\documents\\w_info.hdrdoc");
             }
             else
@@ -89,14 +89,14 @@ namespace ElexModMerger
                 Console.WriteLine("No w_info.hdr found!");
             }
 
-            // find all them World.elexwrl and convert those, then add to worldResult and write new World.elexwrl
+            // find all them World.elexwrl and convert those, then add to sectorResult and write new World.elexwrl
             var worldFiles = Directory.GetFiles(".", "World.elexwrl", SearchOption.AllDirectories);
             if (worldFiles.Length != 0)
             {
                 HashSet<string> sectorResult = new HashSet<string>();
                 foreach (string worldFile in worldFiles)
                 {
-                    Process.Start("CMD.exe", "/C elexresman.exe " + worldFile).WaitForExit();
+                    runElexResMan(inputFile: worldFile, inputArg: "").WaitForExit();
                     Console.WriteLine("Adding current File: " + worldFile);
                     sectorResult.UnionWith(ReadWorld(worldFile: worldFile + "doc"));
                 }
@@ -121,7 +121,7 @@ namespace ElexModMerger
                     tw.WriteLine("    \"\"");
                     tw.WriteLine("]");
                     tw.Close();
-                    Process.Start("CMD.exe", "/C elexresman.exe " + "MergeMod\\World\\World.elexwrldoc").WaitForExit();
+                    runElexResMan(inputFile: "MergeMod\\World\\World.elexwrldoc", inputArg: "").WaitForExit();
                     File.Delete("MergeMod\\World\\World.elexwrldoc");
                 }
             }
@@ -136,15 +136,8 @@ namespace ElexModMerger
                 Console.WriteLine("Create m_9_MergeMod.pak");
                 Console.WriteLine("Press any key!");
                 Console.ReadKey();
-                Process myProcess = new System.Diagnostics.Process();
-                myProcess.StartInfo.FileName = "elexresman.exe";
-                myProcess.StartInfo.Arguments = "MergeMod";
-                myProcess.StartInfo.UseShellExecute = false;
-                myProcess.StartInfo.RedirectStandardInput = true;
-                myProcess.Start();
-                StreamWriter myStreamWriter = myProcess.StandardInput;
-                myStreamWriter.WriteLine("9");
-                myProcess.WaitForExit();
+                Process mergeProc = runElexResMan("MergeMod", "9");
+                mergeProc.WaitForExit();
             }
             else
             {
@@ -158,6 +151,20 @@ namespace ElexModMerger
             Console.WriteLine("");
             Console.WriteLine("All done!");
             Console.ReadKey();
+        }
+
+        private static Process runElexResMan(string inputFile, string inputArg)
+        {
+            Process myProcess = new System.Diagnostics.Process();
+            myProcess.StartInfo.FileName = "elexresman.exe";
+            myProcess.StartInfo.Arguments = inputFile;
+            myProcess.StartInfo.UseShellExecute = false;
+            myProcess.StartInfo.RedirectStandardInput = true;
+            myProcess.StartInfo.RedirectStandardOutput = true;
+            myProcess.Start();
+            StreamWriter myStreamWriter = myProcess.StandardInput;
+            myStreamWriter.WriteLine(inputArg);
+            return myProcess;
         }
 
         private static Dictionary<string, List<string>> ReadInfos(string infoFile)
