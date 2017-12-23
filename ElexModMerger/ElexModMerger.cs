@@ -30,6 +30,14 @@ namespace ElexModMerger
                 Environment.Exit(0);
             }
 
+            // extract original files, they should always be added first starting with 'c' instead of 'm'
+            if (File.Exists("c_1_na.pak"))
+            {
+                Console.WriteLine("Extracting c_1_na.pak");
+                RunElexResMan(inputFile: "c_1_na.pak", inputArg: "4").WaitForExit();
+                RunElexResMan(inputFile: "c_1_na.pak", inputArg: "5").WaitForExit();
+            }
+
             // extract all them mod files
             if (File.Exists("m_9_MergeMod.pak"))
             {
