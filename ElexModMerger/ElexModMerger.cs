@@ -145,7 +145,7 @@ namespace ElexModMerger
                 Dictionary<string, List<string>> wQuestResult = new Dictionary<string, List<string>>();
                 foreach (string wQuestFile in wQuestFiles)
                 {
-                    Process.Start("CMD.exe", "/C elexresman.exe " + wQuestFile).WaitForExit();
+                    RunElexResMan(inputFile: wQuestFile, inputArg: "").WaitForExit();
                     Console.WriteLine("Adding current File: " + wQuestFile);
                     var wQuest = ReadQuests(questFile: wQuestFile + "doc");
                     foreach (KeyValuePair<string, List<string>> quest in wQuest)
@@ -171,7 +171,7 @@ namespace ElexModMerger
                     tw.WriteLine("}");
                     tw.Close();
                 }
-                Process.Start("CMD.exe", "/C elexresman.exe " + "MergeMod\\documents\\w_quest.hdrdoc").WaitForExit();
+                RunElexResMan(inputFile: "MergeMod\\documents\\w_quest.hdrdoc", inputArg: "").WaitForExit();
                 File.Delete("MergeMod\\documents\\w_quest.hdrdoc");
             }
             else
